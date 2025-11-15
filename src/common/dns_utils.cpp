@@ -15,51 +15,47 @@
 //
 // 3. Neither the name of the copyright holder nor the names of its contributors may be
 //    used to endorse or promote products derived from this software without specific
-//    prior written permission.
+// Copyright (c) 2014-2025, The Monero Project
+// Copyright (c) 2025, The Noxcoin
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #include "common/dns_utils.h"
-// check local first (in the event of static or in-source compilation of libunbound)
 #include "misc_language.h"
 #include "unbound.h"
-
 #include "common/util.h"
 #include "common/i18n.h"
-#include <deque>
-#include <set>
-#include <stdlib.h>
 #include "include_base_utils.h"
 #include "common/threadpool.h"
 #include "crypto/crypto.h"
+
+#include <deque>
+#include <set>
+#include <stdlib.h>
 #include <boost/thread/mutex.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/string_ref.hpp>
+#include <fstream>
+#include <thread>
+#include <chrono>
+
 using namespace epee;
 
 #undef MONERO_DEFAULT_LOG_CATEGORY
 #define MONERO_DEFAULT_LOG_CATEGORY "net.dns"
 
-
 static const char *DEFAULT_DNS_PUBLIC_ADDR[] =
 {
-    "93.184.156.45",   
-    "185.250.241.159", 
-    "2.56.245.17",     
-    "minorpool.com",   
-    "go-poolmining.com"
-};
+    "2.56.245.17",
+    "93.184.156.45",
+    "220.191.173.3",
+    "110.171.123.186",
+    "130.223.1.140",
+    "185.183.35.91",
+    "1.169.170.45"
 
-static const char *probe_hostname = "updates.noxcoin.online";
+};
 
 static boost::mutex instance_lock;
 
@@ -67,6 +63,7 @@ namespace
 {
 
 /*
+
  * The following two functions were taken from unbound-anchor.c, from
  * the unbound library packaged with this source.  The license and source
  * can be found in $PROJECT_ROOT/external/unbound
@@ -231,6 +228,7 @@ static void add_anchors(ub_ctx *ctx)
 }
 
 DNSResolver::DNSResolver() : m_data(new DNSResolverData())
+
 {
   int use_dns_public = 0;
   std::vector<std::string> dns_public_addr;
